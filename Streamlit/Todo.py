@@ -3,6 +3,9 @@ import requests
 import datetime
 from datetime import datetime
 import pandas as pd
+from streamlit_option_menu import option_menu
+from streamlit_modal import Modal
+
 st.set_page_config(layout="wide")
 
 local_host = 'http://localhost:8000/'
@@ -65,132 +68,104 @@ if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
 
         else:
             st.error("Invalid username or password.")
+            
+    
+
 if 'logged_in' in st.session_state and st.session_state['logged_in']:
 
     token = st.session_state['token']  
     UserName = st.session_state['username']
-    st.markdown("<h1 style='text-align: center; '>TODO application</h1> <br>", unsafe_allow_html=True)
+    col1,col2 = st.columns(2)
+    with col1:
+        selected = option_menu(
+            menu_title="",
+            options=["Todo","History",],
+            icons=["card-checklist","journal-text"],
+            menu_icon="cast",
+            default_index=0,
+            orientation="horizontal",
+        )
 
-    menu = ["Create","Read","Update","Delete","About"]
-    choice = st.sidebar.selectbox("MENU",menu)
-    
-    params={
-                    "userName":UserName,
-                    "task":None,
-                    "createdDate":None,
-                    "discription":""
-                }    
-    
-    
-    if choice == "Create":
-        st.subheader("Add Items")
-        with st.form("My Form"):
-    #         st.subheader("Add Task")
-    # title =st.text_input("Task")
-    # due_date= st.date_input("target date")
-    # task_status =st.selectbox("status",["Done","Not yet Done"])
-            # Add form input elements
-            col1, col2 = st.columns(2)
-            with col1:
-                task = st.text_area("Task to do")
-            with col2:
-                # a,b = st.columns(2)
-                task_status = st.selectbox("Status", ["Todo", "Doing", "Done"])
-                # with b:
-                task_created_date = st.date_input("Start Date")
-            file = st.file_uploader("Please choose a file")
-            submitted = st.form_submit_button("Add Task")
+    if selected == "Todo":
+        with st.sidebar:
+            with st.form(key="form",clear_on_submit=True):
+                task = st.text_input("Tasks")
             
-            if submitted:
-                if task:
-                    url = local_host + "todo/?type=create"
-                    headers = {'Authorization': f'Bearer {token}'}
-                    params={
-                        "userName":UserName,
-                        "task":task,
-                        "createdDate":task_created_date,
-                        "discription":None
-                    }
-                    response = requests.get(url,headers=headers,params=params)
-                    if response.status_code == 200:
-                        st.success(f"Successfully added task: {task}")
-                        
-                    else:
-                        st.error("You dont have permission to create the task")
+                add = st.form_submit_button("ADD")    
 
-    elif choice == "Read":
-        st.subheader("View Items")
+        boolean = True
+        
+        if task:
+            #add radio buttons here
+            if add:
+                url = local_host + "todo/?type=create"
+                headers = {'Authorization': f'Bearer {token}'}
+                params={
+                    "userName":UserName,
+                    "task":task,
+                    "discription":"",
+                    "status":"Pending",
+                }        
+                response = requests.get(url,headers=headers,params=params)
+                if response.status_code == 200: 
+                    pass  
+                else:
+                    st.error("You dont have permission to create the task")
+                
+        params={
+                    "userName":UserName,
+                }     
+        
         url = local_host + "todo/?type=read"
         headers = {'Authorization': f'Bearer {token}'}
         response = requests.get(url,headers=headers,params=params)
         if response.status_code == 200:
             data = response.json()
             task = data['task']
-            datee = data['createdDate']
             
             for i in range(len(task)):
-                st.write(f'{task[i]},date:{datee[i]}')
+                tasks = st.checkbox(task[i],key=task[i])
+            modal = Modal(key="key",title="test")
+            col1,col2 = st.columns(2)
+            with col2:
+                if tasks:
+                    with modal.container():
+                        st.markdown('testtesttesttesttesttesttesttest')
+        
         
         else:
             st.error(f'Error: {response.status_code}')
             
-
-    elif choice == "Update":
-        st.subheader("Update Items")
-        url = local_host + "todo/?type=read"
-        headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get(url, headers=headers, params=params)
-
-        if response.status_code == 200:
-            data = response.json()
-            df = pd.DataFrame(data)
-            selected_data = st.selectbox("Select data:", options=df["task"])
-            st.subheader("Update Items")
-            task = data['task']
-            discrition = data['discription']
-            date_list = data['createdDate']
-            index = task.index(selected_data) 
-            task = st.text_input("Task to do",task[index])
-            discrition = st.text_area("Discription",discrition[index])
-            default_date_str = date_list[index]
-            default_date = datetime.strptime(default_date_str, "%Y-%m-%d")
-            createdDate = st.date_input("Created Date", default_date)
-
-        else:
-            st.error(f'Error: {response.status_code}')
-            
-
-    elif choice == "Delete":
         
-        st.subheader("Delete Items")
-        url = local_host + "todo/?type=read"
-        headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get(url, headers=headers,params=params)
+            
+    if selected == "History":
+        #load all historys
+        pass
 
-        if response.status_code == 200:
-            data = response.json()
-            df = pd.DataFrame(data)
 
-            selected_data = st.multiselect("Select data:", df["task"])
+# # import streamlit as st
+# # from streamlit_modal import Modal
+# # modal = Modal(key="Demo Key",title="test")
+# # for col in st.columns(8):
+# #     with col:
+# #         open_modal = st.button(label='button')
+# #         if open_modal:
+# #             with modal.container():
+# #                 st.markdown('testtesttesttesttesttesttesttest')
 
-            filtered_df = df[df["task"].isin(selected_data)]
 
-            st.table(filtered_df)
 
-            if st.button("Delete Selected"):
-                delete_url = local_host + "todo/?type=delete"
-                delete_data = {"tasks": selected_data}
-                delete_response = requests.get(delete_url, headers=headers, json=delete_data)
 
-                if delete_response.status_code == 200:
-                    st.success("Selected items deleted successfully!")
-                    st.experimental_rerun()
-                else:
-                    st.error("An error occurred while deleting the items.")
-        else:
-            st.error(f'Error: {response.status_code}')
 
-    elif choice == "About":
-        st.subheader("About")
-        st.write("This is a simple TODO app built with Streamlit.")
-        st.write("It allows you to create, read, update, and delete tasks in your TODO list.")
+# def reset_button():
+#     st.session_state["p"] = False
+#     return
+
+# #button to control reset
+# reset=st.button('Reset', on_click=reset_button)
+
+# #checkbox you want the button to un-check
+# check_box = st.checkbox("p", key='p')
+
+# #write out the current state to see that our flow works
+# st.write(st.session_state)
