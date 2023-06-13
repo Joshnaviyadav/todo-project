@@ -39,15 +39,16 @@ def create_task(request,userName,task,createdDate,discription):
     print("obj created successfully")
 
     
-def read_task(request):
+def read_task(request,userName):
     data = ToDo.objects.all()
     task = []
     discription = []
     createdDate = []
     for item in data:
-        task.append(item.task)
-        discription.append(item.discription)
-        createdDate.append(item.createdDate)
+        if item.userName == userName:
+            task.append(item.task)
+            discription.append(item.discription)
+            createdDate.append(item.createdDate)
         
     response_data = {
         "task" : task,
@@ -81,7 +82,7 @@ class Todo(APIView):
             elif Type == "create":
                 response = create_task(request,userName,task,createdDate,discription)
             elif Type == "read":
-                response = read_task(request)
+                response = read_task(request,userName)
             return JsonResponse(response)
             
         except Exception as e:

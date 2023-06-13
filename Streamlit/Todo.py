@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import datetime
-from datetime import date
+from datetime import datetime
 import pandas as pd
 st.set_page_config(layout="wide")
 
@@ -85,6 +85,10 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
     if choice == "Create":
         st.subheader("Add Items")
         with st.form("My Form"):
+    #         st.subheader("Add Task")
+    # title =st.text_input("Task")
+    # due_date= st.date_input("target date")
+    # task_status =st.selectbox("status",["Done","Not yet Done"])
             # Add form input elements
             col1, col2 = st.columns(2)
             with col1:
@@ -96,11 +100,8 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
                 task_created_date = st.date_input("Start Date")
             file = st.file_uploader("Please choose a file")
             submitted = st.form_submit_button("Add Task")
+            
             if submitted:
-                # Perform actions to add task to the todo list
-                # Save the task details in the database or any storage
-                # Display a success message
-                
                 if task:
                     url = local_host + "todo/?type=create"
                     headers = {'Authorization': f'Bearer {token}'}
@@ -111,7 +112,6 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
                         "discription":None
                     }
                     response = requests.get(url,headers=headers,params=params)
-                    # st.experimental_rerun()
                     if response.status_code == 200:
                         st.success(f"Successfully added task: {task}")
                         
@@ -133,46 +133,28 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
         
         else:
             st.error(f'Error: {response.status_code}')
-        # Perform actions to fetch and display tasks from the todo list
-        # Retrieve task details from the database or any storage
-        # Display the tasks in a table or any desired format
+            
 
     elif choice == "Update":
         st.subheader("Update Items")
         url = local_host + "todo/?type=read"
         headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, params=params)
 
         if response.status_code == 200:
             data = response.json()
             df = pd.DataFrame(data)
-
             selected_data = st.selectbox("Select data:", options=df["task"])
             st.subheader("Update Items")
-            url = local_host + "todo/?type=read"
-            headers = {'Authorization': f'Bearer {token}'}
-            data = {
-                "task":selected_data,
-            }
-            response = requests.get(url, headers=headers,json=data)
-            if response.status_code == 200:
-                data = response.json()
-                task = data['task']
-                discrition = data['discription']
-                date_list = data['createdDate']
-                task = st.text_input("Task to do",task[0])
-                discrition = st.text_area("Discription",discrition[0])
-                st.write(date[0])
-                # print(type(date[0]))
-                default_date_str = date_list[0]  # Select the desired date from the list
-
-                # Convert the string to a datetime.date object
-                # default_date = datetime.strptime(default_date_str, "%Y-%m-%d").date()
-                # Convert start_date and end_date strings to datetime objects
-                # start_date = datetime.strptime(start_date, "%Y-%m-%d")
-                # createdDate = st.date_input("Created Date", default_date)
-                # createdDate = st.date_input("Created Date",date[0])
-            # filtered_df = df[df["task"].isin(selected_data)]
+            task = data['task']
+            discrition = data['discription']
+            date_list = data['createdDate']
+            index = task.index(selected_data) 
+            task = st.text_input("Task to do",task[index])
+            discrition = st.text_area("Discription",discrition[index])
+            default_date_str = date_list[index]
+            default_date = datetime.strptime(default_date_str, "%Y-%m-%d")
+            createdDate = st.date_input("Created Date", default_date)
 
         else:
             st.error(f'Error: {response.status_code}')
@@ -183,7 +165,7 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
         st.subheader("Delete Items")
         url = local_host + "todo/?type=read"
         headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers,params=params)
 
         if response.status_code == 200:
             data = response.json()
@@ -198,8 +180,6 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
             if st.button("Delete Selected"):
                 delete_url = local_host + "todo/?type=delete"
                 delete_data = {"tasks": selected_data}
-                # print(selected_data)
-                # print(delete_data)
                 delete_response = requests.get(delete_url, headers=headers, json=delete_data)
 
                 if delete_response.status_code == 200:
@@ -207,12 +187,6 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
                     st.experimental_rerun()
                 else:
                     st.error("An error occurred while deleting the items.")
-                # Perform actions to delete tasks from the todo list
-                # Delete task details from the database or any storage based on user input
-                # Display a success message after deleting the task
-                
-            
-            
         else:
             st.error(f'Error: {response.status_code}')
 
