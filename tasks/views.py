@@ -43,7 +43,7 @@ def create_task(request,userName,task,description,status):
     data = ToDo.objects.all()
     boolean = True
     for item in data:
-        if item.task == task and item.status == "Pending":
+        if item.task == task and item.status == "Pending" and item.user_name == userName:
             boolean = False
     if boolean:
         ToDo.objects.create(
