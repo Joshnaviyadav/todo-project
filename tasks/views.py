@@ -9,14 +9,24 @@ from .models import ToDo
 from django.views.decorators.csrf import csrf_exempt
 # from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.core.files.storage import default_storage
 
 
 # Create your views here.
 def index(request):
     return HttpResponse("index")
 
-def update_task(request):
-    pass
+def history(request,userName):
+    data = ToDo.objects.filter(user_name=userName,status="Completed")
+    task = []
+    for item in data:
+        task.append(item.task)
+        
+    response_data = {
+        "task" : task,
+    }
+        
+    return response_data
 
 
 def delete_tasks(request):
@@ -33,7 +43,7 @@ def create_task(request,userName,task,description,status):
     data = ToDo.objects.all()
     boolean = True
     for item in data:
-        if item.task == task:
+        if item.task == task and item.status == "Pending":
             boolean = False
     if boolean:
         ToDo.objects.create(
@@ -46,13 +56,10 @@ def create_task(request,userName,task,description,status):
 
     
 def read_task(request,userName):
-    data = ToDo.objects.all()
+    data = ToDo.objects.filter(user_name=userName,status="Pending")
     task = []
-    description = []
-    status = []
     for item in data:
-        if item.user_name == userName:
-            task.append(item.task)
+        task.append(item.task)
         
     response_data = {
         "task" : task,
@@ -60,6 +67,16 @@ def read_task(request,userName):
         
     return response_data
 
+def upload_file(request,userName,task,description,status,uploaded_file):
+    updating_obj = ToDo.objects.filter(user_name=userName, task=task, status="Pending").first()
+    print(updating_obj)
+    updating_obj.description = description
+    updating_obj.status = status
+    save_directory = 'files/'
+    updating_obj.file = default_storage.save(save_directory + uploaded_file.name, uploaded_file)
+    updating_obj.save()
+    response_data={'message': 'File uploaded successfully', 'file_path': "wow"}
+    return response_data
 
         
 
@@ -75,8 +92,8 @@ class Todo(APIView):
             status = self.request.GET.get('status')
             discription = self.request.GET.get('discription')
              
-            if Type == "update":
-                response = update_task(request)
+            if Type == "history":
+                response = history(request,userName)
             elif Type == "delete":
                 response = delete_tasks(request)
             elif Type == "create":
@@ -95,16 +112,20 @@ class Todo(APIView):
             userName = self.request.GET.get('userName')
             task = self.request.GET.get('task')
             status = self.request.GET.get('status')
-            discription = self.request.GET.get('discription')
+            print(status)
+            description = self.request.GET.get('description')
+            print(description)
+            uploaded_file = self.request.FILES.get('file')
+            print(uploaded_file)
             
-            if Type == "update":
-                response = update_task(request)
-            elif Type == "delete":
-                response = delete_tasks(request)
+            if Type == "history":
+                response = history(request,userName)
             elif Type == "create":
-                response = create_task(request,userName,task,discription,status)
+                response = create_task(request,userName,task,description,status)
             elif Type == "read":
                 response = read_task(request,userName)
+            elif Type == "uploadfile":
+                response = upload_file(request,userName,task,description,status,uploaded_file)
             return JsonResponse(response)
                 
         except Exception as e:

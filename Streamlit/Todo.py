@@ -85,7 +85,9 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
             default_index=0,
             orientation="horizontal",
         )
-
+    # with col2:
+    #     st.image('media/images/profile_photo.jpg', width=150)
+        
     if selected == "Todo":
         with st.sidebar:
             with st.form(key="form",clear_on_submit=True):
@@ -125,13 +127,35 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
             
             for i in range(len(task)):
                 tasks = st.checkbox(task[i],key=task[i])
-            modal = Modal(key="key",title="test")
-            col1,col2 = st.columns(2)
-            with col2:
+                modal = Modal(key="key",title="update")
+                # col1 = st.columns(1)
+                # with col1:
                 if tasks:
                     with modal.container():
-                        st.markdown('testtesttesttesttesttesttesttest')
-        
+                        with st.form(key="forms",clear_on_submit=True):
+                            description = st.text_area("Description")
+                            file=st.file_uploader("please choose a file")
+                            submit = st.form_submit_button("submit")
+                            if description:
+                                if submit :
+                                    url = local_host + "todo/?type=uploadfile"
+                                    headers = {'Authorization': f'Bearer {token}'}
+                                    params = {
+                                        "userName":UserName,
+                                        "description":description,
+                                        "status":"Completed",
+                                        "task":task[i],
+                                    }
+                                    files = {
+                                        'file': file
+                                    }
+                                    st.success("Submited successfully")
+                                    response = requests.post(url,headers=headers,params=params,files=files)
+                                    if response.status_code == 200:
+                                        st.success("WOW")
+                                    else:
+                                        st.error("ERROR")
+    
         
         else:
             st.error(f'Error: {response.status_code}')
@@ -139,8 +163,25 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
         
             
     if selected == "History":
-        #load all historys
-        pass
+        #load all historys ehere status is completed
+        params={
+                "userName":UserName,
+            }     
+        
+        url = local_host + "todo/?type=history"
+        headers = {'Authorization': f'Bearer {token}'}
+        response = requests.get(url,headers=headers,params=params)
+        
+        if response.status_code == 200:
+            data = response.json()
+            task = data['task']
+            for i in range(len(task)):
+                st.subheader(task[i])
+        else:
+            st.error(f'Error: {response.status_code}')
+        
+        
+                
 
 
 # # import streamlit as st
@@ -154,7 +195,25 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
 # #                 st.markdown('testtesttesttesttesttesttesttest')
 
 
+# names = ["df1","df2"]
 
+# def create_checkboxes (names :List[str], df):
+#   checkboxes = {}
+#   for name in names:
+#      checkboxes[name] = st.sidebar.checkbox(name, key=name, value=True)
+
+
+#   dfs = []
+#   for key, value in checkboxes.items():
+#       checkboxes[key] == "df1"
+#       dfs.append(df_list[0])
+#       checkboxes[key] == "df2"
+#       dfs.append(df_list[1])
+
+#    if len(dfs) > 1:
+#       df = pd.concat(dfs)
+
+# return df, checkboxes
 
 
 # def reset_button():
@@ -167,5 +226,4 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
 # #checkbox you want the button to un-check
 # check_box = st.checkbox("p", key='p')
 
-# #write out the current state to see that our flow works
-# st.write(st.session_state)
+#write out the current state to see that our flow wo
